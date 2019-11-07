@@ -152,7 +152,9 @@ fn main() {
         {
             let mut peak_val = peak2.lock().unwrap();
             if verbosity > 0 {
-                println!("peak value: {}", *peak_val);
+                if verbosity > 1 || silence_seconds > 0 {
+                    println!("peak value: {}", *peak_val);
+                }
             }
             if *peak_val < silence_threshold {
                 silence_seconds += 1;
