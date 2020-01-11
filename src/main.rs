@@ -62,6 +62,14 @@ fn main() {
                 .required(false),
         )
         .arg(
+            Arg::with_name("client_name")
+                .short("n")
+                .help("The name of the JACK client")
+                .takes_value(true)
+                .required(false)
+                .default_value("silentjack-rs")
+        )
+        .arg(
             Arg::with_name("verbose")
                 .short("v")
                 .long("verbose")
@@ -72,8 +80,10 @@ fn main() {
 
     let verbosity = args.occurrences_of("verbose");
 
-    let (client, status) = jack::Client::new("silentjack-rs", jack::ClientOptions::NO_START_SERVER)
-        .expect("Jack client startup failed! Examine the error information.");
+    let (client, status) = jack::Client::new(
+        args.value_of("client_name").unwrap(),
+        jack::ClientOptions::NO_START_SERVER
+    ).expect("Jack client startup failed! Examine the error information.");
 
     println!("Startup status: {:?}", status);
 
