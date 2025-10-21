@@ -54,6 +54,12 @@ fn main() {
                 .index(1),
         )
         .arg(
+            Arg::with_name("end_command")
+                .help("The command to run when silence ends")
+                .required(false)
+                .index(2),
+        )
+        .arg(
             Arg::with_name("port")
                 .help("The JACK input port to automatically connect to")
                 .short("p")
@@ -67,7 +73,7 @@ fn main() {
                 .help("The name of the JACK client")
                 .takes_value(true)
                 .required(false)
-                .default_value("silentjack-rs")
+                .default_value("silentjack-rs"),
         )
         .arg(
             Arg::with_name("verbose")
@@ -82,8 +88,9 @@ fn main() {
 
     let (client, status) = jack::Client::new(
         args.value_of("client_name").unwrap(),
-        jack::ClientOptions::NO_START_SERVER
-    ).expect("Jack client startup failed! Examine the error information.");
+        jack::ClientOptions::NO_START_SERVER,
+    )
+    .expect("Jack client startup failed! Examine the error information.");
 
     println!("Startup status: {:?}", status);
 
@@ -108,7 +115,8 @@ fn main() {
             }
             let val = lin2db((*sample).abs());
             // println!("{}: {}", *sample, val);
-            if val > *peak_val { // they're all negative
+            if val > *peak_val {
+                // they're all negative
                 // println!("new peak {}, linear scale {}", val, *sample);
                 *peak_val = val;
             }
@@ -151,6 +159,7 @@ fn main() {
         .parse::<i32>()
         .expect("Invalid value for timeout (integer please)!");
     let silence_command: &str = args.value_of("command").unwrap();
+    let silence_end_command: Option<&str> = args.value_of("end_command");
 
     let mut silent: bool = false;
     let mut silence_seconds: i32 = 0;
@@ -180,6 +189,14 @@ fn main() {
             } else {
                 if silent || silence_seconds > 0 {
                     println!("silence over.");
+                    if let Some(silence_end_command) = silence_end_command {
+                        if let Err(ret) = Command::new(silence_end_command)
+                            .env("SILENCE_DURATION", silence_seconds.to_string())
+                            .output()
+                        {
+                            println!("Executing silence end command failed! {}", ret);
+                        }
+                    }
                 }
                 silence_seconds = 0;
                 silent = false;
